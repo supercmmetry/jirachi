@@ -1,0 +1,4 @@
+CREATE TABLE IF NOT EXISTS seeds (
+    prefix TEXT PRIMARY KEY,
+    index BIGSERIAL NOT NULL
+);
