@@ -1,5 +1,3 @@
-
-
 use diesel::{PgConnection, Connection, RunQueryDsl};
 use diesel::prelude::*;
 use dotenv;
@@ -10,6 +8,8 @@ use crate::internal::seed::Seed;
 mod internal;
 pub mod schema;
 
+#[macro_use]
+extern crate anyhow;
 #[macro_use]
 extern crate diesel;
 
@@ -23,18 +23,22 @@ pub struct Jirachi {
 }
 
 impl Jirachi {
-    pub fn new() -> Self {
+    pub fn new() -> anyhow::Result<Self> {
         dotenv::dotenv().ok();
-        let conn = PgConnection::establish(env::var("JIRACHI_DB_URL").unwrap().as_str());
+        let conn = PgConnection::establish(env::var("JIRACHI_DB_URL")?.as_str())?;
 
-        return Self {
-            conn: conn.unwrap(),
+        return Ok(Self {
+            conn,
             prefixes: vec![],
             current_index: 0
-        }
+        })
     }
 
-    fn get_next_prefix(&mut self) -> String {
+    fn get_next_prefix(&mut self) -> anyhow::Result<String> {
+        if self.current_index >= self.prefixes.len() as i32 {
+            return Err(anyhow!("Insufficient prefixes were loaded."));
+        }
+
         let selected_prefix = self.prefixes[self.current_index as usize].clone();
 
         if self.current_index + 1  == self.prefixes.len() as i32 {
@@ -43,42 +47,42 @@ impl Jirachi {
             self.current_index += 1;
         }
 
-        selected_prefix
+        Ok(selected_prefix)
     }
 
-    fn count(&self, other_prefix: String) -> i32 {
+    fn count(&self, other_prefix: String) -> anyhow::Result<i32> {
         let seed = seeds.find(other_prefix).first::<Seed>(&self.conn);
-        return seed.unwrap().index
+        return Ok(seed?.index)
     }
 
-    fn update(&self, seed: Seed) {
+    fn update(&self, seed: Seed) -> QueryResult<usize> {
         diesel::update(seeds.filter(prefix.eq(seed.prefix.clone())))
             .set(index.eq(seed.index.clone()))
-            .execute(&self.conn);
+            .execute(&self.conn)
     }
 
-    fn softload_prefixes(&mut self) {
+    fn softload_prefixes(&mut self) -> anyhow::Result<()> {
         if self.prefixes.len() == 0 {
             let result = seeds.load::<Seed>(&self.conn);
 
-            println!("{:#?}", result.unwrap());
-
-            // for seed in &result.unwrap() {
-            //     self.prefixes.push(seed.prefix.clone());
-            // }
+            for seed in &result? {
+                self.prefixes.push(seed.prefix.clone());
+            }
         }
+
+        Ok(())
     }
 
-    pub fn wish(&mut self) -> String {
-        self.softload_prefixes();
-        let new_prefix = self.get_next_prefix();
-        let count = self.count(new_prefix.clone());
+    pub fn wish(&mut self) -> anyhow::Result<String> {
+        self.softload_prefixes()?;
+        let new_prefix = self.get_next_prefix()?;
+        let count = self.count(new_prefix.clone())?;
         self.update(Seed {
             prefix: new_prefix.clone(),
-            index: count.clone()
-        });
+            index: count.clone() + 1
+        })?;
 
-        return new_prefix + count.to_string().as_str()
+        return Ok(new_prefix + count.to_string().as_str())
     }
 }
 
