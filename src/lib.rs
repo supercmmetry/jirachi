@@ -1,9 +1,9 @@
-use diesel::{PgConnection, Connection, RunQueryDsl};
+use crate::internal::seed::Seed;
+use crate::schema::seeds::dsl::*;
 use diesel::prelude::*;
+use diesel::{Connection, PgConnection, RunQueryDsl};
 use dotenv;
 use std::env;
-use crate::schema::seeds::dsl::*;
-use crate::internal::seed::Seed;
 
 mod internal;
 pub mod schema;
@@ -19,7 +19,7 @@ mod tests;
 pub struct Jirachi {
     conn: PgConnection,
     prefixes: Vec<String>,
-    current_index: i32
+    current_index: i32,
 }
 
 impl Jirachi {
@@ -30,8 +30,8 @@ impl Jirachi {
         return Ok(Self {
             conn,
             prefixes: vec![],
-            current_index: 0
-        })
+            current_index: 0,
+        });
     }
 
     fn get_next_prefix(&mut self) -> anyhow::Result<String> {
@@ -41,7 +41,7 @@ impl Jirachi {
 
         let selected_prefix = self.prefixes[self.current_index as usize].clone();
 
-        if self.current_index + 1  == self.prefixes.len() as i32 {
+        if self.current_index + 1 == self.prefixes.len() as i32 {
             self.current_index = 0;
         } else {
             self.current_index += 1;
@@ -52,7 +52,7 @@ impl Jirachi {
 
     fn count(&self, other_prefix: String) -> anyhow::Result<i32> {
         let seed = seeds.find(other_prefix).first::<Seed>(&self.conn);
-        return Ok(seed?.index)
+        return Ok(seed?.index);
     }
 
     fn update(&self, seed: Seed) -> QueryResult<usize> {
@@ -79,11 +79,9 @@ impl Jirachi {
         let count = self.count(new_prefix.clone())?;
         self.update(Seed {
             prefix: new_prefix.clone(),
-            index: count.clone() + 1
+            index: count.clone() + 1,
         })?;
 
-        return Ok(new_prefix + count.to_string().as_str())
+        return Ok(new_prefix + count.to_string().as_str());
     }
 }
-
-
