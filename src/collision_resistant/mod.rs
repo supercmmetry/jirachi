@@ -5,6 +5,7 @@ use diesel::prelude::*;
 use diesel::{Connection, PgConnection, RunQueryDsl};
 use dotenv;
 use std::env;
+use crate::Wishable;
 
 pub struct Jirachi {
     conn: PgConnection,
@@ -62,8 +63,10 @@ impl Jirachi {
 
         Ok(())
     }
+}
 
-    pub fn wish(&mut self) -> anyhow::Result<String> {
+impl Wishable for Jirachi {
+    fn wish(&mut self) -> anyhow::Result<String> {
         self.softload_prefixes()?;
         let new_prefix = self.get_next_prefix()?;
         let count = self.count(new_prefix.clone())?;
