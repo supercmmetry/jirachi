@@ -3,12 +3,22 @@ use rand::Rng;
 use anyhow;
 use crate::Wishable;
 
+
+/// Jirachi wrapper for adjective-noun key generator
 pub struct Jirachi {
     adjectives: Vec<String>,
     nouns: Vec<String>
 }
 
 impl Jirachi {
+
+    /// Returns a anyhow::Result containing a Jirachi instance
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let jirachi = Jirachi::new().unwrap();
+    /// ```
     pub fn new() -> anyhow::Result<Self> {
         let raw_adjectives = include_bytes!("../../res/adjective_noun/adjectives.txt");
         let raw_nouns = include_bytes!("../../res/adjective_noun/nouns.txt");
@@ -76,6 +86,14 @@ impl Jirachi {
 }
 
 impl Wishable for Jirachi {
+    /// Returns a key created using random adjective-noun pairs
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let jirachi = Jirachi::new().unwrap();
+    /// let wish = jirachi.wish().unwrap();
+    /// ```
     fn wish(&mut self) -> anyhow::Result<String> {
         let noun = self.get_random_noun().to_lowercase();
         let adjective = self.get_random_adjective().to_lowercase();

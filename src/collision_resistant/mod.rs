@@ -14,6 +14,13 @@ pub struct Jirachi {
 }
 
 impl Jirachi {
+    /// Returns a anyhow::Result containing a Jirachi instance
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let jirachi = Jirachi::new().unwrap();
+    /// ```
     pub fn new() -> anyhow::Result<Self> {
         dotenv::dotenv().ok();
         let conn = PgConnection::establish(env::var("JIRACHI_DB_URL")?.as_str())?;
@@ -66,6 +73,14 @@ impl Jirachi {
 }
 
 impl Wishable for Jirachi {
+    /// Returns a collision-resistant key
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let jirachi = Jirachi::new().unwrap();
+    /// let wish = jirachi.wish().unwrap();
+    /// ```
     fn wish(&mut self) -> anyhow::Result<String> {
         self.softload_prefixes()?;
         let new_prefix = self.get_next_prefix()?;
