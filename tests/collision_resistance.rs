@@ -7,5 +7,3 @@ fn wish_key() {
     let mut jirachi = Jirachi::new().unwrap();
     println!("wish: {}", jirachi.wish().unwrap());
 }
-
-
