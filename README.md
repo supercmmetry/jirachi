@@ -1,4 +1,7 @@
 # jirachi
+<a href="https://crates.io/crates/jirachi"><img src=https://img.shields.io/badge/crates.io-v0.1.2-orange></a>
+
+[ci]: https://crates.io/crates/jirachi
 A collision-resistant runtime agnostic key generator written in rust
 
 ## Steps to use:
