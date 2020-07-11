@@ -8,6 +8,7 @@ use std::env;
 use crate::Wishable;
 use diesel::r2d2::ConnectionManager;
 use std::ops::Deref;
+use std::sync::Mutex;
 
 type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;
 
@@ -25,6 +26,7 @@ pub struct Jirachi {
     pool: Pool,
     prefixes: Vec<String>,
     current_index: i32,
+    mutex: Mutex<()>
 }
 
 impl Jirachi {
@@ -46,6 +48,7 @@ impl Jirachi {
             pool,
             prefixes: vec![],
             current_index: 0,
+            mutex: Mutex::new(())
         });
     }
 
@@ -123,6 +126,10 @@ impl Wishable for Jirachi {
     /// let wish = jirachi.wish().unwrap();
     /// ```
     fn wish(&mut self) -> anyhow::Result<String> {
+        if self.mutex.lock().is_err() {
+            return Err(anyhow!("Failed to acquire mutex lock."));
+        }
+
         self.softload_prefixes()?;
         let new_prefix = self.get_next_prefix()?;
         let count = self.count(new_prefix.clone())?;
