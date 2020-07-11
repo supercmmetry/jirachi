@@ -13,5 +13,5 @@ A collision-resistant runtime agnostic key generator written in rust
 
 ## Features:
 - Collision resistance: This feature is optional and can be enabled in Cargo.toml by using <br/>
-`jirachi: {version: "x.y.z", features=["collision-resistance"]}`
+`jirachi: {version: "x.y.z", features=["collision-resistant"]}`
 - Adjective noun key generator: This is a default feature which can generate adjective-noun pairs from an embedded dataset.
