@@ -17,6 +17,8 @@ impl Jirachi {
     /// # Example
     ///
     /// ```
+    /// use jirachi::adjective_noun::Jirachi;
+    ///
     /// let jirachi = Jirachi::new().unwrap();
     /// ```
     pub fn new() -> anyhow::Result<Self> {
@@ -91,7 +93,10 @@ impl Wishable for Jirachi {
     /// # Example
     ///
     /// ```
-    /// let jirachi = Jirachi::new().unwrap();
+    /// use jirachi::adjective_noun::Jirachi;
+    /// use jirachi::Wishable;
+    ///
+    /// let mut jirachi = Jirachi::new().unwrap();
     /// let wish = jirachi.wish().unwrap();
     /// ```
     fn wish(&mut self) -> anyhow::Result<String> {
