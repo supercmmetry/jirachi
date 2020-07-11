@@ -1,6 +1,6 @@
 # jirachi
-<a href="https://crates.io/crates/jirachi"><img src=https://img.shields.io/badge/crates.io-v0.1.4-orange></a>
-<a href="https://docs.rs/jirachi/0.1.4"><img src=https://img.shields.io/badge/docs.rs-jirachi-blue></a>
+<a href="https://crates.io/crates/jirachi"><img src=https://img.shields.io/badge/crates.io-v0.1.5-orange></a>
+<a href="https://docs.rs/jirachi/0.1.5"><img src=https://img.shields.io/badge/docs.rs-jirachi-blue></a>
 
 <img src="https://i.ibb.co/2M8nC9V/rusty-jirachi-2.png" alt="rusty-jirachi-2" border="0">
 
