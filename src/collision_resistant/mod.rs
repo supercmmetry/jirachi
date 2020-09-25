@@ -1,4 +1,5 @@
 mod seed;
+
 use crate::collision_resistant::seed::Seed;
 use crate::schema::seeds::dsl::*;
 use diesel::prelude::*;
@@ -7,26 +8,12 @@ use dotenv;
 use std::env;
 use crate::Wishable;
 use diesel::r2d2::ConnectionManager;
-use std::ops::Deref;
-use std::sync::Mutex;
+use diesel::dsl::min;
 
 type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;
 
-pub struct DbConn(pub r2d2::PooledConnection<ConnectionManager<PgConnection>>);
-
-impl Deref for DbConn {
-    type Target = PgConnection;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
 pub struct Jirachi {
-    pool: Pool,
-    prefixes: Vec<String>,
-    current_index: i32,
-    mutex: Mutex<()>
+    pool: Pool
 }
 
 impl Jirachi {
@@ -45,71 +32,8 @@ impl Jirachi {
         let pool = Pool::new(manager).expect("db pool");
 
         return Ok(Self {
-            pool,
-            prefixes: vec![],
-            current_index: 0,
-            mutex: Mutex::new(())
+            pool
         });
-    }
-
-    fn get_next_prefix(&mut self) -> anyhow::Result<String> {
-        if self.current_index >= self.prefixes.len() as i32 {
-            return Err(anyhow!("Insufficient prefixes were loaded."));
-        }
-
-        let selected_prefix = self.prefixes[self.current_index as usize].clone();
-
-        if self.current_index + 1 == self.prefixes.len() as i32 {
-            self.current_index = 0;
-        } else {
-            self.current_index += 1;
-        }
-
-        Ok(selected_prefix)
-    }
-
-    fn count(&self, other_prefix: String) -> anyhow::Result<i32> {
-        let result = self.pool.get();
-        if result.is_err() {
-            return Err(anyhow!("Error occured while fetching a connection."))
-        }
-
-        let conn = DbConn(result.unwrap());
-
-        let seed = seeds.find(other_prefix).first::<Seed>(conn.deref());
-        return Ok(seed?.index);
-    }
-
-    fn update(&self, seed: Seed) -> QueryResult<usize> {
-        let result = self.pool.get();
-        if result.is_err() {
-            return Err(diesel::result::Error::NotFound);
-        }
-
-        let conn = DbConn(result.unwrap());
-
-        diesel::update(seeds.filter(prefix.eq(seed.prefix.clone())))
-            .set(index.eq(seed.index.clone()))
-            .execute(conn.deref())
-    }
-
-    fn softload_prefixes(&mut self) -> anyhow::Result<()> {
-        let result = self.pool.get();
-        if result.is_err() {
-            return Err(anyhow!("Error occured while fetching a connection."))
-        }
-
-        let conn = DbConn(result.unwrap());
-
-        if self.prefixes.len() == 0 {
-            let result = seeds.load::<Seed>(conn.deref());
-
-            for seed in &result? {
-                self.prefixes.push(seed.prefix.clone());
-            }
-        }
-
-        Ok(())
     }
 }
 
@@ -126,19 +50,27 @@ impl Wishable for Jirachi {
     /// let wish = jirachi.wish().unwrap();
     /// ```
     fn wish(&mut self) -> anyhow::Result<String> {
-        if self.mutex.lock().is_err() {
-            return Err(anyhow!("Failed to acquire mutex lock."));
-        }
+        let conn = self.pool.get()?;
 
-        self.softload_prefixes()?;
-        let new_prefix = self.get_next_prefix()?;
-        let count = self.count(new_prefix.clone())?;
-        self.update(Seed {
-            prefix: new_prefix.clone(),
-            index: count.clone() + 1,
-        })?;
+        conn.transaction::<_, diesel::result::Error, _>(|| {
+            let seed_index_option: Option<i32> = seeds.select(min(index)).first(&conn)?;
 
-        return Ok(new_prefix + count.to_string().as_str());
+            if seed_index_option.is_none() {
+                return Err(diesel::result::Error::RollbackTransaction);
+            }
+
+            let seed_index = seed_index_option.unwrap();
+
+            let next_prefix: String = seeds.filter(index.eq(seed_index.clone()))
+                .select(prefix)
+                .first(&conn)?;
+
+            diesel::update(seeds.filter(prefix.eq(next_prefix.clone())))
+                .set(index.eq(seed_index.clone() + 1))
+                .execute(&conn);
+
+            Ok(Ok(next_prefix + seed_index.to_string().as_str()))
+        })?
     }
 }
 
