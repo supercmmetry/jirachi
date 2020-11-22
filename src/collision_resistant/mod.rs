@@ -29,7 +29,8 @@ impl Jirachi {
     pub fn new() -> anyhow::Result<Self> {
         dotenv::dotenv().ok();
         let manager = ConnectionManager::<PgConnection>::new(env::var("JIRACHI_DB_URL")?);
-        let pool = Pool::new(manager).expect("db pool");
+        let pool_size = env::var("JIRACHI_POOL_SIZE")?.parse::<u32>().expect("pool size");
+        let pool = Pool::builder().max_size(pool_size).build(manager).expect("db pool");
 
         return Ok(Self {
             pool
