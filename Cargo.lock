@@ -82,7 +82,7 @@ checksum = "5b141fdc7836c525d4d594027d318c84161ca17aaf8113ab1f81ab93ae897485"
 
 [[package]]
 name = "jirachi"
-version = "0.1.8"
+version = "0.1.9"
 dependencies = [
  "anyhow",
  "diesel",
